@@ -1,123 +1,323 @@
-<!DOCTYPE html>
-<html lang="en" x-data="{ darkMode: true, search: '' }">
+<!doctype html>
+<html lang="en" x-data="{ search: '' }" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vanguard Bot - Discord Moderation & Protection</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vanguard — Discord Moderation & Protection</title>
 
-  <!-- Tailwind + Alpine -->
+  <!-- Tailwind, Alpine, GSAP, Particles -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 
   <link rel="icon" href="https://i.imgur.com/6vX6D2s.png">
 
   <style>
-    body { transition: background 0.5s, color 0.5s; }
-    .glass-card { backdrop-filter: blur(12px); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; transition: transform 0.3s, box-shadow 0.3s; }
-    .glass-card:hover { transform: translateY(-10px); box-shadow: 0 0 30px rgba(0, 255, 255, 0.5); }
-    .neon-button { text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff; }
+    /* Base */
+    body {
+      background: #08080f;
+      color: #e6f7ff;
+      overflow-x: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Glass cards */
+    .glass-card {
+      backdrop-filter: blur(12px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.08));
+      border: 1px solid rgba(0,255,255,0.06);
+      border-radius: 14px;
+      transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s;
+      position: relative;
+      overflow: hidden;
+    }
+    .glass-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 10px 30px rgba(0,255,255,0.06); }
+
+    /* Neon buttons */
+    .neon-btn {
+      background: linear-gradient(90deg,#06b6d4,#7c3aed);
+      color: white;
+      font-weight: 700;
+      border-radius: 12px;
+      padding: .75rem 1.25rem;
+      box-shadow: 0 6px 30px rgba(124,58,237,0.18), inset 0 -2px 10px rgba(0,0,0,0.15);
+      transition: transform .18s;
+    }
+    .neon-btn:hover{ transform: translateY(-4px) scale(1.02); }
+
+    /* input focus */
+    input[type="text"] {
+      background: rgba(255,255,255,0.02);
+      color: #dff8ff;
+      border: 1px solid rgba(0,255,255,0.06);
+      border-radius: 10px;
+      padding: .75rem 1rem;
+    }
+    input[type="text"]:focus { outline: none; box-shadow: 0 0 18px rgba(6,182,212,0.12); border-color: rgba(6,182,212,0.4); }
+
+    /* Tooltip */
+    .tooltip {
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,255,255,0.06);
+      color: #dff8ff;
+      padding: .5rem .75rem;
+      border-radius: 8px;
+      font-size: .92rem;
+      pointer-events: none;
+      white-space: normal;
+      width: max-content;
+      max-width: 220px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+    }
+
+    /* Floating bot */
+    #floating-bot {
+      position: fixed;
+      width: 64px;
+      height: 64px;
+      bottom: 36px;
+      right: 36px;
+      z-index: 60;
+      pointer-events: none;
+      border-radius: 999px;
+      background: linear-gradient(180deg,#12e0f0,#7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 40px rgba(124,58,237,0.18);
+      transform: translate3d(0,0,0);
+      transition: box-shadow .15s, transform .06s;
+      background-image: url('https://i.imgur.com/6vX6D2s.png');
+      background-size: 56%;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    #floating-bot.glow { box-shadow: 0 18px 50px rgba(6,182,212,0.35), inset 0 -6px 18px rgba(0,0,0,0.12); transform: scale(1.08); }
+
+    /* Floating support button (bottom-right) */
+    .support-btn {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 80;
+      width: 68px;
+      height: 68px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(90deg,#04c2d0,#9b59ff);
+      box-shadow: 0 10px 40px rgba(124,58,237,0.22);
+      transition: transform .12s;
+    }
+    .support-btn:hover { transform: translateY(-6px) scale(1.03); }
+    .support-badge {
+      position: absolute;
+      bottom: 90px;
+      right: 22px;
+      background: rgba(0,0,0,0.5);
+      color: #e7ffff;
+      padding: .35rem .6rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      display:none;
+    }
+    .support-btn:hover + .support-badge { display:block; }
+
+    /* particle canvas behind content */
+    #particles-js { position: fixed; inset: 0; z-index: -30; }
+
+    @media (max-width: 768px) {
+      .neon-btn { padding: .6rem .9rem; }
+      #floating-bot { width:56px; height:56px; right:18px; bottom:18px; }
+    }
   </style>
 </head>
-<body class="bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 font-sans overflow-x-hidden">
+<body>
 
-  <!-- Particles Background -->
-  <div id="particles-js" class="absolute top-0 left-0 w-full h-full -z-10"></div>
+  <!-- particles background -->
+  <div id="particles-js"></div>
 
-  <!-- Theme Toggle -->
-  <div class="fixed top-4 right-4 z-50">
-    <button @click="darkMode = !darkMode" class="px-4 py-2 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 rounded shadow hover:scale-110 transition transform">
-      Toggle Theme
-    </button>
-  </div>
+  <!-- HERO -->
+  <header class="pt-16 pb-8">
+    <div class="container mx-auto px-6 max-w-6xl text-center">
+      <h1 class="text-6xl font-extrabold leading-tight tracking-tight mb-4" style="color:#cffeff">Vanguard</h1>
+      <p class="text-lg text-cyan-100 mb-6 max-w-2xl mx-auto opacity-80">Advanced Discord moderation & protection — Anti-raid, Anti-nuke, Automod, Verification & full logging.</p>
 
-  <!-- Hero Section -->
-  <section class="relative text-center py-28 px-4 overflow-hidden">
-    <h1 class="text-7xl font-extrabold mb-4 neon-button animate__animated animate__pulse">Vanguard</h1>
-    <p class="text-2xl mb-8 opacity-80">Ultimate Discord Moderation & Security Bot</p>
-    <a href="https://discord.com/api/oauth2/authorize?client_id=1457339757074845696&permissions=8&scope=bot%20applications.commands"
-       class="inline-block px-10 py-4 bg-gradient-to-r from-blue-500 to-purple-600 font-bold rounded-lg shadow-lg hover:scale-110 transform transition neon-button">Invite Vanguard</a>
-  </section>
+      <div class="flex items-center justify-center gap-4 mt-4 flex-wrap">
+        <a href="https://discord.com/api/oauth2/authorize?client_id=1457339757074845696&permissions=8&scope=bot%20applications.commands"
+           class="neon-btn inline-flex items-center gap-3">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M12 2L19 8v8l-7 6-7-6V8z" fill="rgba(255,255,255,0.12)"/></svg>
+          Invite Vanguard
+        </a>
 
-  <!-- Features Section -->
-  <section class="py-20 px-8 max-w-6xl mx-auto">
-    <h2 class="text-5xl font-bold mb-12 text-center">Features</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-      <div class="glass-card p-6 text-center">
-        <h3 class="font-bold text-2xl mb-2">Moderation</h3>
-        <p>Ban, Kick, Timeout, Clear messages, Lock/Unlock channels, Unban users.</p>
+        <a href="https://discord.gg/AYpkJGvYDy" target="_blank"
+           class="inline-flex items-center gap-3 px-4 py-2 rounded-lg border border-cyan-600 text-cyan-200 hover:bg-cyan-600/10 transition">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M12 2L19 8v8l-7 6-7-6V8z" fill="rgba(6,182,212,0.2)"/></svg>
+          Support Server
+        </a>
       </div>
-      <div class="glass-card p-6 text-center">
-        <h3 class="font-bold text-2xl mb-2">Anti-Raid & Anti-Nuke</h3>
-        <p>Detect mass bans, kicks, role/channel deletes, and restore deleted roles/channels automatically.</p>
+    </div>
+  </header>
+
+  <!-- FEATURES -->
+  <section class="container mx-auto px-6 max-w-6xl py-12">
+    <h2 class="text-3xl font-semibold mb-6">Features</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="glass-card p-5">
+        <h3 class="font-bold text-lg mb-2">Moderation</h3>
+        <p class="text-sm opacity-80">Ban, Kick, Timeout, Clear messages, Lock/Unlock channels, Unban users — embedded confirmations & logs.</p>
       </div>
-      <div class="glass-card p-6 text-center">
-        <h3 class="font-bold text-2xl mb-2">Automod</h3>
-        <p>Anti-spam, anti-link, auto-timeout users, verification system with roles.</p>
+
+      <div class="glass-card p-5">
+        <h3 class="font-bold text-lg mb-2">Anti-Raid & Anti-Nuke</h3>
+        <p class="text-sm opacity-80">Detect rapid bans/kicks, role/channel deletes and attempt quick rollbacks & alert admins in logs channel.</p>
       </div>
-      <div class="glass-card p-6 text-center">
-        <h3 class="font-bold text-2xl mb-2">Logs & Monitoring</h3>
-        <p>All moderation actions logged in a dedicated channel: bans, kicks, deletes, spam.</p>
-      </div>
-      <div class="glass-card p-6 text-center">
-        <h3 class="font-bold text-2xl mb-2">Info Commands</h3>
-        <p>Check server stats, user roles, join date, status with /info commands.</p>
-      </div>
-      <div class="glass-card p-6 text-center">
-        <h3 class="font-bold text-2xl mb-2">Secure & Professional</h3>
-        <p>Embedded messages, permission-checked actions, full professional server experience.</p>
+
+      <div class="glass-card p-5">
+        <h3 class="font-bold text-lg mb-2">Automod & Verification</h3>
+        <p class="text-sm opacity-80">Anti-spam, anti-link, auto-timeout and /verify system (per-server configured verified role).</p>
       </div>
     </div>
   </section>
 
-  <!-- Searchable Commands Section -->
-  <section class="py-20 px-8 bg-gray-900 dark:bg-gray-100">
-    <h2 class="text-5xl font-bold mb-8 text-center text-white dark:text-gray-900">Commands</h2>
-    <div class="max-w-3xl mx-auto mb-6">
-      <input type="text" placeholder="Search commands..." x-model="search"
-        class="w-full px-4 py-3 rounded shadow text-gray-900 focus:outline-none text-lg">
+  <!-- COMMANDS -->
+  <section class="container mx-auto px-6 max-w-6xl py-8">
+    <h2 class="text-3xl font-semibold mb-6">Commands</h2>
+
+    <div class="mb-6">
+      <input type="text" x-model="search" placeholder="Search commands..." class="w-full md:w-2/3" />
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Alpine loop for commands -->
       <template x-for="cmd in [
-        '/ping', '/ban {user}', '/unban {userId}', '/kick {user}', 
-        '/timeout {user} {minutes}', '/clear {amount}', 
-        '/info server', '/info user {username}', 
-        '/lock {channel}', '/unlock {channel}', 
-        '/verifyrole {role}', '/logschannel {channel}', '/help']" :key="cmd">
-        <div x-show="cmd.toLowerCase().includes(search.toLowerCase())"
-             class="glass-card p-4 rounded-lg shadow-lg cursor-pointer hover:shadow-neon hover:scale-105 transition">
-          <h4 class="font-bold text-xl mb-1" x-text="cmd"></h4>
+        { name:'/ping', desc:'Check bot responsiveness.' },
+        { name:'/ban {user}', desc:'Ban a user from the server.' },
+        { name:'/unban {userId}', desc:'Unban a user using their ID.' },
+        { name:'/kick {user}', desc:'Kick a user from the server.' },
+        { name:'/timeout {user} {minutes}', desc:'Temporarily mute (timeout) a user.' },
+        { name:'/clear {amount}', desc:'Delete N messages (1-100).' },
+        { name:'/info server', desc:'Get server info/stats.' },
+        { name:'/info user {username}', desc:'Get info about a specific user.' },
+        { name:'/lock {channel}', desc:'Lock a channel to stop messaging for @everyone.' },
+        { name:'/unlock {channel}', desc:'Unlock a channel for @everyone.' },
+        { name:'/verifyrole {role}', desc:'Set the role given upon verification (admin only).' },
+        { name:'/verify', desc:'Verification button — users click or run to get verified role.' },
+        { name:'/logschannel {channel}', desc:'Set logs channel for moderation actions.' },
+        { name:'/help', desc:'Show all available commands.' }
+      ]" :key="cmd.name">
+        <div x-show="cmd.name.toLowerCase().includes(search.toLowerCase())"
+             x-transition
+             class="glass-card p-4 relative"
+             x-data="{ tooltip:false }"
+             @mouseenter="tooltip = true; $nextTick(()=>dispatchHover(true))"
+             @mouseleave="tooltip = false; $nextTick(()=>dispatchHover(false))">
+
+          <h4 class="text-lg font-semibold mb-1" x-text="cmd.name"></h4>
+          <div class="text-sm opacity-80" x-text="cmd.desc"></div>
+
+          <!-- tooltip (redundant: description shown under title, but keep for hover) -->
+          <div x-show="tooltip" x-transition.opacity class="tooltip">
+            <span x-text="cmd.desc"></span>
+          </div>
         </div>
       </template>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="py-8 text-center text-gray-400 dark:text-gray-700">
-    &copy; 2026 Vanguard Bot. Made with ❤️ for Discord communities.
+  <!-- FOOTER -->
+  <footer class="container mx-auto px-6 max-w-6xl py-10 text-center text-sm opacity-80">
+    <div class="mb-4">
+      <a href="https://discord.gg/AYpkJGvYDy" target="_blank" class="text-cyan-200 hover:underline mr-4">Support Server</a>
+      <a href="https://discord.com/api/oauth2/authorize?client_id=1457339757074845696&permissions=8&scope=bot%20applications.commands" target="_blank" class="text-cyan-200 hover:underline">Invite Vanguard</a>
+    </div>
+    <div>&copy; 2026 Vanguard • Built for secure Discord communities.</div>
   </footer>
 
-  <!-- Particles.js Config -->
-  <script>
-    particlesJS("particles-js", {
-      "particles": {
-        "number": { "value": 60 },
-        "color": { "value": ["#00ffff","#ff00ff","#ff9900"] },
-        "shape": { "type": "circle" },
-        "opacity": { "value": 0.7, "random": true },
-        "size": { "value": 3, "random": true },
-        "line_linked": { "enable": true, "distance": 150, "color": "#00ffff", "opacity": 0.4, "width": 1 },
-        "move": { "enable": true, "speed": 2 }
-      },
-      "interactivity": { "events": { "onhover": { "enable": true, "mode": "grab" } } }
-    });
-  </script>
+  <!-- Floating bot icon -->
+  <div id="floating-bot" aria-hidden="true"></div>
 
-  <!-- GSAP Scroll Animations -->
+  <!-- Floating support button -->
+  <a class="support-btn" href="https://discord.gg/AYpkJGvYDy" target="_blank" aria-label="Support Server">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M7 8v6l5-3 5 3V8" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <div class="support-badge">Join Support Server</div>
+
+  <!-- Scripts: particles, GSAP, floating bot logic -->
   <script>
-    gsap.from("section h2", { y: 50, opacity: 0, duration: 1, stagger: 0.3, scrollTrigger: { trigger: "section", start: "top 80%" }});
-    gsap.from(".glass-card", { y: 30, opacity: 0, duration: 1, stagger: 0.2, scrollTrigger: { trigger: ".glass-card", start: "top 90%" }});
+    /* particles config */
+    particlesJS("particles-js", {
+      particles: {
+        number: { value: 60 },
+        color: { value: ["#00f0ff", "#ff4df0", "#ffd34d"] },
+        shape: { type: "circle" },
+        opacity: { value: 0.75, random: true },
+        size: { value: 3, random: true },
+        line_linked: { enable: true, distance: 140, color: "#00f0ff", opacity: 0.16, width: 1 },
+        move: { enable: true, speed: 1.6 }
+      },
+      interactivity: { events: { onhover: { enable: true, mode: "grab" } } }
+    });
+
+    /* GSAP scroll animations */
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.utils.toArray('section h2, header h1').forEach((el)=> {
+      gsap.from(el, { y: 30, opacity: 0, duration: .9, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 85%" }});
+    });
+    gsap.utils.toArray('.glass-card').forEach((el,i)=> {
+      gsap.from(el, { y: 20, opacity: 0, duration: .9, delay: i*0.05, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 92%" }});
+    });
+
+    /* Floating bot follow-mouse & glow on hover cards */
+    (function(){
+      const bot = document.getElementById('floating-bot');
+      let mouseX = window.innerWidth - 100, mouseY = window.innerHeight - 100;
+      // initial:
+      bot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
+
+      // move smoothing
+      let posX = mouseX, posY = mouseY;
+      const speed = 0.15;
+      function animate(){
+        posX += (mouseX - posX) * speed;
+        posY += (mouseY - posY) * speed;
+        bot.style.right = (window.innerWidth - posX - 32) + 'px';
+        bot.style.bottom = (window.innerHeight - posY - 32) + 'px';
+        requestAnimationFrame(animate);
+      }
+      animate();
+
+      // update target on mousemove
+      window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+      // highlight bot when hovering cards
+      window.dispatchHover = function(state){
+        if(state) bot.classList.add('glow'); else bot.classList.remove('glow');
+      };
+
+      // Also add event listeners to all cards (for users without Alpine)
+      function bindCardHover() {
+        document.querySelectorAll('.glass-card').forEach(card=>{
+          card.addEventListener('mouseenter', ()=> window.dispatchHover(true));
+          card.addEventListener('mouseleave', ()=> window.dispatchHover(false));
+        });
+      }
+      // Bind after short delay (cards might be Alpine-rendered)
+      setTimeout(bindCardHover, 600);
+    })();
   </script>
 </body>
 </html>
